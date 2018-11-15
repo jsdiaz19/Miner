@@ -111,7 +111,10 @@ class Game:
 		while self.playing:
 			self.dt = self.clock.tick(FPS) / 1000
 			self.player.event(self.enemy.rectEnemy)
-			self.drawScene()	
+			self.drawScene()
+			if self.player.health==0:
+				pygame.quit()
+				sys.exit()
 
 # ======================== MAIN PLAYER ========================================================================
 
@@ -120,7 +123,7 @@ class player:
 		self.player= pygame.image.load("sprites/player.png")
 		self.rectPlayer = self.player.get_rect(topleft=(posX*SCALE,posY*SCALE))
 		self.angle=0
-		self.health=5
+		self.health=100
 
 	def event(self,enemy):
 		for event in pygame.event.get():	
@@ -138,7 +141,6 @@ class player:
 					self.movement(3,enemy)
 
 	def isBlocked(self,cod):
-		print(cod)
 		if cod==0:
 			if matriz[posX][posY+1]!='#': return False
 		elif cod==1:
@@ -171,7 +173,6 @@ class player:
 				self.player= pygame.transform.rotate(self.player,-90)
 				self.angle=-90
 				if posY!=g.enemy.posX or posX+1!=g.enemy.posY:
-					print("entro")
 					self.rectPlayer.y+=SCALE
 					posX+=1
 				
@@ -294,7 +295,7 @@ class  enemy:
 			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
 				self.image= pygame.image.load("sprites/attack.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
-				
+				g.player.health-=10
 			else:
 				self.image= pygame.image.load("sprites/enemy.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
