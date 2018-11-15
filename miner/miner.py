@@ -29,6 +29,8 @@ class Game:
 
 	def __init__(self):
 		pygame.init()
+		pygame.font.init()
+		self.myfont = pygame.font.SysFont('Comic Sans MS', 30)
 		self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
 		pygame.display.set_caption("MINER GAME")
 		pygame.key.set_repeat(500, 100)
@@ -92,6 +94,16 @@ class Game:
 		self.enemy.chaze(posX,posY)
 		#pygame.draw.rect(self.screen,(70,70,70),self.enemy.rectEnemy)
 		self.screen.blit(self.enemy.image,(self.enemy.posX*SCALE,self.enemy.posY*SCALE))
+		if self.player.health<=30:
+			pygame.draw.rect(self.screen,RED,[950, 10, 2*self.player.health, 20])
+
+		elif self.player.health>30 and self.player.health<=60:
+			pygame.draw.rect(self.screen,YELLOW,[950, 10, 2*self.player.health, 20])
+
+		elif self.player.health>60:
+			pygame.draw.rect(self.screen,GREEN,[950, 10, 2*self.player.health, 20])
+		textsurface = self.myfont.render(str(self.player.health), False, (0, 0, 0))
+		self.screen.blit(textsurface,(900,0))
 		pygame.display.flip()
 
 	def run(self):
@@ -107,7 +119,8 @@ class player:
 	def __init__(self):
 		self.player= pygame.image.load("sprites/player.png")
 		self.rectPlayer = self.player.get_rect(topleft=(posX*SCALE,posY*SCALE))
-		self.angle=0	
+		self.angle=0
+		self.health=5
 
 	def event(self,enemy):
 		for event in pygame.event.get():	
@@ -281,7 +294,7 @@ class  enemy:
 			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
 				self.image= pygame.image.load("sprites/attack.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
-				print("colision")
+				
 			else:
 				self.image= pygame.image.load("sprites/enemy.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
