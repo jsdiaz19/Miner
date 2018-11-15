@@ -32,9 +32,8 @@ class Game:
 		self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
 		pygame.display.set_caption("MINER GAME")
 		pygame.key.set_repeat(500, 100)
-		self.player= pygame.image.load("sprites/player.png")
+		self.player=player()
 		self.enemy= enemy()
-		self.angle=0	
 		self.camera= Camera(WIDTH, HEIGHT)
 		self.clock = pygame.time.Clock()
 
@@ -88,85 +87,105 @@ class Game:
 		self.screen.fill(whiteColor)
 		self.drawMaze()
 		RecPlayer= pygame.Rect(posX,posY,20,25)
-		#pygame.draw.rect(self.screen,(100,70,70),self.rect)
-		#pygame.draw.rect(self.screen,(100,70,70),self.enemy.rect)
-		self.screen.blit(self.player,(posX*SCALE,posY*SCALE))
+		#pygame.draw.rect(self.screen,(100,70,70),self.player.rectPlayer)
+		self.screen.blit(self.player.player,(posY*SCALE,posX*SCALE))
 		self.enemy.chaze(posX,posY)
+		#pygame.draw.rect(self.screen,(70,70,70),self.enemy.rectEnemy)
 		self.screen.blit(self.enemy.image,(self.enemy.posX*SCALE,self.enemy.posY*SCALE))
 		pygame.display.flip()
-
-
-	def isBlocked(self,cod):
-		if cod==0:
-			if StateGame[X_State][Y_State+1]!='#': return False
-		elif cod==1:
-			if StateGame[X_State+1][Y_State]!='#': return False	
-		elif cod==2:
-			if StateGame[X_State][Y_State-1]!='#': return False	
-		elif cod==3:
-			if StateGame[X_State-1][Y_State]!='#': return False	
-		return True
-
-	def event(self):
-		for event in pygame.event.get():	
-			if event.type == pygame.QUIT:
-				pygame.quit()
-				sys.exit()
-			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_RIGHT:
-						g.movement(0)				
-				if event.key == pygame.K_DOWN:
-						g.movement(1)
-				if event.key == pygame.K_LEFT:
-					g.movement(2)
-				if event.key == pygame.K_UP:
-					g.movement(3)
-
-	def movement(self,mov):
-		global posX, posY, X_State, Y_State
-		if mov==0:
-			if self.isBlocked(mov)==False:    ##Move to right
-				posX+=1
-				self.player= pygame.transform.rotate(self.player,-self.angle)
-				self.player= pygame.transform.rotate(self.player,0)
-				self.angle=0
-				Y_State+=1
-		elif mov==1:
-			if self.isBlocked(mov)==False:
-				posY+=1   ##move to down
-				self.player= pygame.transform.rotate(self.player,-self.angle)
-				self.player= pygame.transform.rotate(self.player,-90)
-				self.angle=-90
-				X_State+=1	
-		elif mov==2:
-			if self.isBlocked(mov)==False:   	##Move to left
-				posX-=1
-				self.player= pygame.transform.rotate(self.player,-self.angle)
-				self.player= pygame.transform.rotate(self.player,180)
-				self.angle=180
-				Y_State-=1	
-		elif mov==3:
-			if self.isBlocked(mov)==False:		##Move to up
-				posY-=1
-				self.player= pygame.transform.rotate(self.player,-self.angle)
-				self.player= pygame.transform.rotate(self.player,90)
-				self.angle=90
-				X_State-=1
-		self.camera.update(posX,posY)
-
 
 	def run(self):
 		self.playing = True
 		while self.playing:
 			self.dt = self.clock.tick(FPS) / 1000
-			self.event()
+			self.player.event(self.enemy.rectEnemy)
 			self.drawScene()	
 
-# ================================================================
+# ======================== MAIN PLAYER ========================================================================
+
+class player:
+	def __init__(self):
+		self.player= pygame.image.load("sprites/player.png")
+		self.rectPlayer = self.player.get_rect(topleft=(posX*SCALE,posY*SCALE))
+		self.angle=0	
+
+	def event(self,enemy):
+		for event in pygame.event.get():	
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				sys.exit()
+			elif event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_RIGHT:     ##Derecha
+						self.movement(0,enemy)				
+				if event.key == pygame.K_DOWN:      ## Abajo
+						self.movement(1,enemy)
+				if event.key == pygame.K_LEFT:		##Izquierda
+					self.movement(2,enemy)
+				if event.key == pygame.K_UP:		##Arriba
+					self.movement(3,enemy)
+
+	def isBlocked(self,cod):
+		print(cod)
+		if cod==0:
+			if matriz[posX][posY+1]!='#': return False
+		elif cod==1:
+			if matriz[posX+1][posY]!='#': return False	
+		elif cod==2:
+			#print(posY-1,posX,matriz[posX])
+			if matriz[posX][posY-1]!='#': 
+				return False	
+		elif cod==3:
+			if matriz[posX-1][posY]!='#': return False	
+		return True
 
 
+	def movement(self,mov,enemy):
+		global posX, posY, X_State, Y_State
+		if mov==0:
+			if self.isBlocked(mov)==False:    ##Move to right
+				
+				self.player= pygame.transform.rotate(self.player,-self.angle)
+				self.player= pygame.transform.rotate(self.player,0)
+				self.angle=0
+				if posY+1!=g.enemy.posX or posX!=g.enemy.posY:
+					self.rectPlayer.x+=SCALE
+					posY+=1
 
-# ==================== ENEMY 1 ( PERSECUTION ) ==========================
+		elif mov==1:
+			if self.isBlocked(mov)==False:
+				   ##move to down
+				self.player= pygame.transform.rotate(self.player,-self.angle)
+				self.player= pygame.transform.rotate(self.player,-90)
+				self.angle=-90
+				if posY!=g.enemy.posX or posX+1!=g.enemy.posY:
+					print("entro")
+					self.rectPlayer.y+=SCALE
+					posX+=1
+				
+		elif mov==2:
+			if self.isBlocked(mov)==False:   	##Move to left
+				
+				self.player= pygame.transform.rotate(self.player,-self.angle)
+				self.player= pygame.transform.rotate(self.player,180)
+				self.angle=180
+				if posY-1!=g.enemy.posX or posX!=g.enemy.posY:
+					self.rectPlayer.x-=SCALE	
+					posY-=1
+					
+		elif mov==3:
+			if self.isBlocked(mov)==False:		##Move to up
+				
+				self.player= pygame.transform.rotate(self.player,-self.angle)
+				self.player= pygame.transform.rotate(self.player,90)
+				self.angle=90
+				if posY!=g.enemy.posX or posX-1!=g.enemy.posY:
+					self.rectPlayer.y-=SCALE	
+					posX-=1
+
+					
+
+
+# ==================== ENEMY 1 ( PERSECUTION ) ==========================================================
 
 class Node():
     """A node class for A* Pathfinding"""
@@ -183,6 +202,7 @@ class  enemy:
 		self.image= pygame.image.load("sprites/enemy.png") 
 		self.posX=14
 		self.posY=13
+		self.rectEnemy = self.image.get_rect(topleft=(self.posX*SCALE,self.posY*SCALE))
 		self.index=0
 		self.player=Node(None,None)	
 		self.angle=0
@@ -246,13 +266,27 @@ class  enemy:
 	def distance(self,a,b,c,d):
 		return abs(c-a)+ abs(d-b)
 	
+	def neighbors(self,x,y,X,Y):
+		if x==X and abs(y-Y)==1:
+			return True
+		elif y==Y and abs(x-X)==1:
+			return True
+		else:
+			return False
+
 
 	def chaze(self,PlayerX,PlayerY):
-		dist= self.distance(PlayerX,PlayerY,self.posX,self.posY)
+		dist= self.distance(PlayerY,PlayerX,self.posX,self.posY)
 		if dist<=5:
-			end= (PlayerY,PlayerX)
-			start= (self.posY,self.posX)
-			if end!=(self.posY,self.posX):	
+			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
+				self.image= pygame.image.load("sprites/attack.png") 
+				self.image= pygame.transform.rotate(self.image,self.angle)
+				print("colision")
+			else:
+				self.image= pygame.image.load("sprites/enemy.png") 
+				self.image= pygame.transform.rotate(self.image,self.angle)
+				end= (PlayerX,PlayerY)
+				start= (self.posY,self.posX)	
 				path = self.astar(matriz, start, end)
 				if self.posY+1==path[1][0]:
 					self.image= pygame.transform.rotate(self.image,-self.angle)
@@ -270,10 +304,14 @@ class  enemy:
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,0)
 					self.angle=0
-				if end!=(path[1][0],path[1][1]):	
+				if end!=(path[1][0],path[1][1]):
 					self.posX=path[1][1]
-					self.posY=path[1][0]
-					self.index+=1
+					self.posY=path[1][0]	
+					self.rectEnemy.y=self.posY*SCALE
+					self.rectEnemy.x=self.posX*SCALE
+			
+				
+				
 
 		
 
