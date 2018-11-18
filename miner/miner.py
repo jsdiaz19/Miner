@@ -38,6 +38,7 @@ class Game:
 		self.enemy= enemy()
 		self.camera= Camera(WIDTH, HEIGHT)
 		self.clock = pygame.time.Clock()
+		self.move=0
 
 	def isBorder(self,x,y):						
 		if x == 0 and (y>=0 and y < mazeHeight):
@@ -63,11 +64,11 @@ class Game:
 	# Draw maze walls without player or objectives
 	def drawMaze(self):
 		for x in range(mazeHeight):
-			for y in range(mazeWidth+2):
+			for y in range(self.move,mazeWidth+2):
 				if matriz[x][y] == '#':
-					self.drawWall(y,x)
+					self.drawWall(y-self.move,x)
 				else:
-					self.drawFloor(y,x)
+					self.drawFloor(y-self.move,x)
 
 
 	def generateScene(self):
@@ -86,14 +87,15 @@ class Game:
 
 	def drawScene(self):
 		global Xnpc, Ynpc
+		#print(self.move)
 		self.screen.fill(whiteColor)
 		self.drawMaze()
 		RecPlayer= pygame.Rect(posX,posY,20,25)
 		#pygame.draw.rect(self.screen,(100,70,70),self.player.rectPlayer)
-		self.screen.blit(self.player.player,(posY*SCALE,posX*SCALE))
+		self.screen.blit(self.player.player,((posY-self.move)*SCALE,posX*SCALE))
 		self.enemy.chaze(posX,posY)
-		#pygame.draw.rect(self.screen,(70,70,70),self.enemy.rectEnemy)
-		self.screen.blit(self.enemy.image,(self.enemy.posX*SCALE,self.enemy.posY*SCALE))
+		 #pygame.draw.rect(self.screen,(70,70,70),self.enemy.rectEnemy)
+		self.screen.blit(self.enemy.image,((self.enemy.posX-self.move)*SCALE,self.enemy.posY*SCALE))
 		if self.player.health<=30:
 			pygame.draw.rect(self.screen,RED,[950, 10, 2*self.player.health, 20])
 
@@ -104,7 +106,7 @@ class Game:
 			pygame.draw.rect(self.screen,GREEN,[950, 10, 2*self.player.health, 20])
 		textsurface = self.myfont.render(str(self.player.health), False, (0, 0, 0))
 		self.screen.blit(textsurface,(900,0))
-		pygame.display.flip()
+		pygame.display.update()
 
 	def run(self):
 		self.playing = True
@@ -126,28 +128,34 @@ class player:
 		self.health=100
 
 	def event(self,enemy):
+		global posY, posX
 		for event in pygame.event.get():	
 			if event.type == pygame.QUIT:
 				pygame.quit()
 				sys.exit()
 			elif event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_RIGHT:     ##Derecha
-						self.movement(0,enemy)				
+						self.movement(0,enemy)
+								
 				if event.key == pygame.K_DOWN:      ## Abajo
 						self.movement(1,enemy)
 				if event.key == pygame.K_LEFT:		##Izquierda
-					self.movement(2,enemy)
+					self.movement(2,enemy)	
 				if event.key == pygame.K_UP:		##Arriba
 					self.movement(3,enemy)
 
 	def isBlocked(self,cod):
 		if cod==0:
-			if matriz[posX][posY+1]!='#': return False
+			if matriz[posX][posY+1]!='#': 
+				if g.move<=47:
+					g.move+=1	
+				return False
 		elif cod==1:
 			if matriz[posX+1][posY]!='#': return False	
 		elif cod==2:
-			#print(posY-1,posX,matriz[posX])
-			if matriz[posX][posY-1]!='#': 
+			if matriz[posX][posY-1]!='#':
+				if g.move-1>=0:
+					g.move-=1 
 				return False	
 		elif cod==3:
 			if matriz[posX-1][posY]!='#': return False	
@@ -225,11 +233,9 @@ class  enemy:
 	    start_node = Node(None, start)
 	    start_node.g = start_node.h = start_node.f = 0
 	    end_node = Node(None, end)
-	    end_node.g = end_node.h = end_node.f = 0
-	   
+	    end_node.g = end_node.h = end_node.f = 0   
 	    open_list = [] 
 	    closed_list = []
-
 	    open_list.append(start_node)
 	    # Loop until you find the end
 	    while len(open_list) > 0:
@@ -240,7 +246,6 @@ class  enemy:
 	            if item.f < current_node.f:					## Se escoge el menor heuristico
 	                current_node = item
 	                current_index = index
-	        #print(current_node.position)
 	        open_list.pop(current_index)
 	        closed_list.append(current_node)
 	        
@@ -291,7 +296,8 @@ class  enemy:
 
 	def chaze(self,PlayerX,PlayerY):
 		dist= self.distance(PlayerY,PlayerX,self.posX,self.posY)
-		if dist<=5:
+
+		if dist<=3:
 			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
 				self.image= pygame.image.load("sprites/attack.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
@@ -301,7 +307,8 @@ class  enemy:
 				self.image= pygame.transform.rotate(self.image,self.angle)
 				end= (PlayerX,PlayerY)
 				start= (self.posY,self.posX)	
-				path = self.astar(matriz, start, end)
+				
+				path = self.astar(matriz, start, end)				
 				if self.posY+1==path[1][0]:
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,90)
@@ -388,7 +395,6 @@ class  enemy:
 
 
 # ================= MAIN  ========================================
-
 
 
 g= Game()
