@@ -36,9 +36,9 @@ class Game:
 		pygame.key.set_repeat(500, 100)
 		self.player=player()
 		self.enemy= enemy()
+		self.enemy2= enemy2()
 		self.camera= Camera(WIDTH, HEIGHT)
 		self.clock = pygame.time.Clock()
-		self.move=0
 
 	def isBorder(self,x,y):						
 		if x == 0 and (y>=0 and y < mazeHeight):
@@ -64,11 +64,11 @@ class Game:
 	# Draw maze walls without player or objectives
 	def drawMaze(self):
 		for x in range(mazeHeight):
-			for y in range(self.move,mazeWidth+2):
+			for y in range(mazeWidth+2):
 				if matriz[x][y] == '#':
-					self.drawWall(y-self.move,x)
+					self.drawWall(y,x)
 				else:
-					self.drawFloor(y-self.move,x)
+					self.drawFloor(y,x)
 
 
 	def generateScene(self):
@@ -87,15 +87,17 @@ class Game:
 
 	def drawScene(self):
 		global Xnpc, Ynpc
-		#print(self.move)
 		self.screen.fill(whiteColor)
 		self.drawMaze()
 		RecPlayer= pygame.Rect(posX,posY,20,25)
-		#pygame.draw.rect(self.screen,(100,70,70),self.player.rectPlayer)
-		self.screen.blit(self.player.player,((posY-self.move)*SCALE,posX*SCALE))
+		self.screen.blit(self.player.player,(posY*SCALE,posX*SCALE))
+
 		self.enemy.chaze(posX,posY)
-		 #pygame.draw.rect(self.screen,(70,70,70),self.enemy.rectEnemy)
-		self.screen.blit(self.enemy.image,((self.enemy.posX-self.move)*SCALE,self.enemy.posY*SCALE))
+		self.screen.blit(self.enemy.image,(self.enemy.posX*SCALE,self.enemy.posY*SCALE))
+
+		self.enemy2.chaze(posX,posY)
+		self.screen.blit(self.enemy2.image,(self.enemy2.posX*SCALE,self.enemy2.posY*SCALE))
+		
 		if self.player.health<=30:
 			pygame.draw.rect(self.screen,RED,[950, 10, 2*self.player.health, 20])
 
@@ -146,17 +148,11 @@ class player:
 
 	def isBlocked(self,cod):
 		if cod==0:
-			if matriz[posX][posY+1]!='#': 
-				if g.move<=47:
-					g.move+=1	
-				return False
+			if matriz[posX][posY+1]!='#': return False
 		elif cod==1:
 			if matriz[posX+1][posY]!='#': return False	
 		elif cod==2:
-			if matriz[posX][posY-1]!='#':
-				if g.move-1>=0:
-					g.move-=1 
-				return False	
+			if matriz[posX][posY-1]!='#':return False	
 		elif cod==3:
 			if matriz[posX-1][posY]!='#': return False	
 		return True
@@ -209,78 +205,88 @@ class player:
 
 # ==================== ENEMY 1 ( PERSECUTION ) ==========================================================
 
+import heapq
+
+class PriorityQueue:
+    def __init__(self):
+        self.elements = []
+    
+    def empty(self):
+        return len(self.elements) == 0
+    
+    def put(self, item, priority):
+    	heapq.heappush(self.elements, (priority, item))
+    
+    def get(self):
+        return heapq.heappop(self.elements)
+
+    def print(self):
+    	for temp in self.elements:
+    		print(temp[0],temp[1].position)
+
+    def content(self,item):
+    	for temp in self.elements:
+    		if temp[1]==item:
+    			return True
+    	return False
+
+
 class Node():
     """A node class for A* Pathfinding"""
     def __init__(self, parent=None, position=None):
         self.parent = parent
         self.position = position
-        self.g = 0
-        self.h = 0
         self.f = 0
-
+    def __lt__(self, other):
+    	return self.f < other.f
 
 class  enemy:
 	def __init__(self):
 		self.image= pygame.image.load("sprites/enemy.png") 
-		self.posX=14
-		self.posY=13
+		self.posX=13
+		self.posY=1
 		self.rectEnemy = self.image.get_rect(topleft=(self.posX*SCALE,self.posY*SCALE))
 		self.index=0
 		self.player=Node(None,None)	
 		self.angle=0
 
-	def astar(self,maze, start, end):
-	    start_node = Node(None, start)
-	    start_node.g = start_node.h = start_node.f = 0
-	    end_node = Node(None, end)
-	    end_node.g = end_node.h = end_node.f = 0   
-	    open_list = [] 
-	    closed_list = []
-	    open_list.append(start_node)
-	    # Loop until you find the end
-	    while len(open_list) > 0:
-	      
-	        current_node = open_list[0]
-	        current_index = 0
-	        for index, item in enumerate(open_list):
-	            if item.f < current_node.f:					## Se escoge el menor heuristico
-	                current_node = item
-	                current_index = index
-	        open_list.pop(current_index)
-	        closed_list.append(current_node)
-	        
-	        if current_node.position == end_node.position:
-	            path = []
-	            current = current_node
-	            while current is not None:
-	                path.append(current.position)
-	                current = current.parent
-	            return path[::-1] 
-	       
-	        children = []
-	        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
-	            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
-	            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
-	                continue
-	          
-	            if maze[node_position[0]][node_position[1]] == '#':
-	                continue
-	            
-	            new_node = Node(current_node, node_position)
-	            
-	            if new_node not in closed_list:
-	            	children.append(new_node)
-	        
-	        for child in children:
-	           
-	            child.g = current_node.g + 1
-	            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
-	            child.f = child.g + child.h
-	       
-	            for open_node in open_list:
-	                if child == open_node and child.g > open_node.g:
-	                    continue
-	            open_list.append(child)
+	def heuristic(self,a, b):
+		(x1, y1) = a
+		(x2, y2) = b
+		return abs(x1 - x2) + abs(y1 - y2)
+
+	def astar(self,maze, poStart,end):
+		frontier= PriorityQueue()
+		Start=Node(None,poStart)
+		Start.f=self.heuristic(poStart,end)
+		frontier.put(Start,0)
+		finish=0
+		visited=[]
+		while finish!=1:
+			temp=frontier.get()
+			visited.append(temp[1].position)
+			if (temp[1].position==end):
+				finish=1
+				path=[]
+				current=temp[1]
+				while current.parent is not None:
+					path.append(current.position)
+					current=current.parent[1]
+				path=path[::-1] 
+				return path 		
+			else:
+				children=[]
+				for neighbors in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+					new_pos=(temp[1].position[0]+neighbors[0],temp[1].position[1]+neighbors[1])
+					if new_pos[0]>mazeHeight or new_pos[1]>mazeWidth or new_pos[0]<0 or new_pos[1]<0:
+						continue
+					if maze[new_pos[0]][new_pos[1]]=='#':
+						continue
+					if new_pos in visited or frontier.content(new_pos)==True:
+						continue
+					nodo=Node(temp,new_pos)
+					nodo.f= self.heuristic(poStart,new_pos)+self.heuristic(new_pos,end)
+					frontier.put(nodo,nodo.f)
 
 	def distance(self,a,b,c,d):
 		return abs(c-a)+ abs(d-b)
@@ -296,8 +302,7 @@ class  enemy:
 
 	def chaze(self,PlayerX,PlayerY):
 		dist= self.distance(PlayerY,PlayerX,self.posX,self.posY)
-
-		if dist<=3:
+		if dist<=9:
 			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
 				self.image= pygame.image.load("sprites/attack.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
@@ -307,92 +312,136 @@ class  enemy:
 				self.image= pygame.transform.rotate(self.image,self.angle)
 				end= (PlayerX,PlayerY)
 				start= (self.posY,self.posX)	
-				
-				path = self.astar(matriz, start, end)				
-				if self.posY+1==path[1][0]:
+				path = self.astar(matriz,start,end)	
+				print(path)
+				if self.posY+1==path[0][0] :
+					print("entro11")
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,90)
 					self.angle=90
-				if self.posY-1==path[1][0]:
+				if self.posY-1==path[0][0]:
+					print("entro12")
 					self.image= pygame.transform.rotate(self.image,-self.angle)
-					self.image= pygame.transform.rotate(self.image,-90)
+					self.image= pygame.transform.rotate(self.image,-180)
 					self.angle=-90
-				if self.posX+1==path[1][1]:
+				if self.posX+1==path[0][1]:
+					print("entro13")
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,-180)
 					self.angle=-180
-				if self.posX-1==path[1][1]:
+				if self.posX-1==path[0][1]:
+					print("entro14")
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,0)
 					self.angle=0
-				if end!=(path[1][0],path[1][1]):
-					self.posX=path[1][1]
-					self.posY=path[1][0]	
+				if end!=(path[0][0],path[0][1]):
+					self.posX=path[0][1]
+					self.posY=path[0][0]	
 					self.rectEnemy.y=self.posY*SCALE
 					self.rectEnemy.x=self.posX*SCALE
 			
+# =====================================================================================================				
 				
+# ==================== ENEMY 2 ( PERSECUTION ) ==========================================================
+		
+class enemy2:
+	def __init__(self):
+		self.image= pygame.image.load("sprites/enemy_2.png") 
+		self.posX=14
+		self.posY=13
+		self.rectEnemy = self.image.get_rect(topleft=(self.posX*SCALE,self.posY*SCALE))
+		self.index=0
+		self.player=Node(None,None)	
+		self.angle=0
+
+	def heuristic(self,a, b):
+		(x1, y1) = a
+		(x2, y2) = b
+		return abs(x1 - x2) + abs(y1 - y2)
+
+	def distance(self,a,b,c,d):
+		return abs(c-a)+ abs(d-b)
+
+	def neighbors(self,x,y,X,Y):
+		if x==X and abs(y-Y)==1:
+			return True
+		elif y==Y and abs(x-X)==1:
+			return True
+		else:
+			return False
+
+	def dijkstra_search(self,maze, poStart, end):
+	    frontier= PriorityQueue()
+	    Start=Node(None,poStart)
+	    Start.f=self.heuristic(poStart,end)
+	    frontier.put(Start,0)
+	    finish=0
+	    visited=[]
+	    while finish!=1:
+	    	temp=frontier.get()
+	    	visited.append(temp[1].position)
+	    	if (temp[1].position==end):
+	    		finish=1
+	    		path=[]
+	    		current=temp[1]
+	    		while current.parent is not None:
+	    			path.append(current.position)
+	    			current=current.parent[1]
+	    		path=path[::-1]
+	    		#print(path) 
+	    		return path 		
+	    	else:
+	    		children=[]
+	    		for neighbors in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+	    			new_pos=(temp[1].position[0]+neighbors[0],temp[1].position[1]+neighbors[1])
+	    			if new_pos[0]>mazeHeight or new_pos[1]>mazeWidth or new_pos[0]<0 or new_pos[1]<0:
+	    				continue
+	    			if maze[new_pos[0]][new_pos[1]]=='#':
+	    				continue
+	    			if new_pos in visited or frontier.content(new_pos)==True:
+	    				continue
+	    			nodo=Node(temp,new_pos)
+	    			nodo.f= temp[1].f+1
+	    			frontier.put(nodo,nodo.f)
+	    		#frontier.print()
+	    		#print("---------------")
+
+	def chaze(self,PlayerX,PlayerY):
+		dist= self.distance(PlayerY,PlayerX,self.posX,self.posY)
+		if dist<=9:
+			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
+				print("entro")
+				self.image= pygame.image.load("sprites/enemy2.png") 
+				self.image= pygame.transform.rotate(self.image,self.angle)
+				g.player.health-=10
+			else:
+				self.image= pygame.image.load("sprites/enemy_2.png") 
+				self.image= pygame.transform.rotate(self.image,self.angle)
+				end= (PlayerX,PlayerY)
+				start= (self.posY,self.posX)	
+				path = self.dijkstra_search(matriz,start,end)
 				
-
-		
-
-
-
-
-
-
-
-  
-# index=3
-
-# def npc(cont=3):
-# 	global Xnpc, Ynpc, index
-# 	start = (Ynpc, Xnpc)
-# 	end = (posY, posX)
-# 	path = astar(matriz, start, end)
-# 	Xnpc=path[cont][1]
-# 	Ynpc=path[cont][0]
-# 	index-=1
-# 	threading.Timer(2, npc).start()
-
-
-# ================================================================
-
-
-
-
-# ================= ENEMY 2 ( DECISION ) =========================
-
-
-
-
-
-# def change_state(a,b):
-# 	global state
-# 	if distance(a,b)<2.0:
-# 		state='shoot'
-# 	else:
-# 		state='patrol'
-
-
-# def execute():
-# 	global state, Xpos, Ypos, direction
-# 	print(Xpos)
-# 	if state=='patrol':
-# 		if Xpos==63:
-# 			direction=='left'
-# 		else:
-# 			direction=='right'
-# 		if direction=='right':
-# 			Xpos+=1
-# 		elif direction=='left':
-# 			Xpos-=1
-
-# 	elif state=='shoot':
-# 		print("s")
-		
-# ================= ENEMY 2 ( DECISION ) =========================
-
+				if self.posY+1==path[0][0]:
+					self.image= pygame.transform.rotate(self.image,-self.angle)
+					self.image= pygame.transform.rotate(self.image,90)
+					self.angle=90
+				if self.posY-1==path[0][0]:
+					self.image= pygame.transform.rotate(self.image,-self.angle)
+					self.image= pygame.transform.rotate(self.image,-90)
+					self.angle=-90
+				if self.posX+1==path[0][1]:
+					self.image= pygame.transform.rotate(self.image,-self.angle)
+					self.image= pygame.transform.rotate(self.image,-180)
+					self.angle=-180
+				if self.posX-1==path[0][1]:
+					self.image= pygame.transform.rotate(self.image,-self.angle)
+					self.image= pygame.transform.rotate(self.image,0)
+					self.angle=0
+				if end!=(path[0][0],path[0][1]):
+					self.posX=path[0][1]
+					self.posY=path[0][0]	
+					self.rectEnemy.y=self.posY*SCALE
+					self.rectEnemy.x=self.posX*SCALE
 
 # ================= MAIN  ========================================
 
