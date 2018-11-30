@@ -39,6 +39,8 @@ class Game:
 		self.enemy2= enemy2()
 		self.camera= Camera(WIDTH, HEIGHT)
 		self.clock = pygame.time.Clock()
+		self.CameraX=0
+		self.CameraY=0
 
 	def isBorder(self,x,y):						
 		if x == 0 and (y>=0 and y < mazeHeight):
@@ -60,15 +62,29 @@ class Game:
 		self.screen.blit(floor,(x*SCALE,y*SCALE))
 		#self.screen.blit(floor,(x*SCALE,y*SCALE))
 
+	def drawKey(self,x,y):
+		self.screen.blit(key,(x*SCALE,y*SCALE))
+
+	def drawTrap(self,x,y):
+		self.screen.blit(trap,(x*SCALE,y*SCALE))
+
+	def drawVida(self,x,y):
+		self.screen.blit(vida,(x*SCALE,y*SCALE))
 
 	# Draw maze walls without player or objectives
 	def drawMaze(self):
-		for x in range(mazeHeight):
-			for y in range(mazeWidth+2):
+		for x in range(self.CameraY,mazeHeight):
+			for y in range(self.CameraX,mazeWidth+2):
 				if matriz[x][y] == '#':
-					self.drawWall(y,x)
+					self.drawWall(y-self.CameraX,x-self.CameraY)
 				else:
-					self.drawFloor(y,x)
+					self.drawFloor(y-self.CameraX,x-self.CameraY)
+					if matriz[x][y] == 'K':
+						self.drawKey(y-self.CameraX,x-self.CameraY)
+					elif matriz[x][y] == 'T':
+						self.drawTrap(y-self.CameraX,x-self.CameraY)
+					elif matriz[x][y] == 'L':
+						self.drawVida(y-self.CameraX,x-self.CameraY)
 
 
 	def generateScene(self):
@@ -89,14 +105,15 @@ class Game:
 		global Xnpc, Ynpc
 		self.screen.fill(whiteColor)
 		self.drawMaze()
+		self.sistemaBasadoEnReglas()
 		RecPlayer= pygame.Rect(posX,posY,20,25)
-		self.screen.blit(self.player.player,(posY*SCALE,posX*SCALE))
+		self.screen.blit(self.player.player,((posY-self.CameraX)*SCALE,(posX-self.CameraY)*SCALE))
 
 		self.enemy.chaze(posX,posY)
-		self.screen.blit(self.enemy.image,(self.enemy.posX*SCALE,self.enemy.posY*SCALE))
+		self.screen.blit(self.enemy.image,((self.enemy.posX-self.CameraX)*SCALE,(self.enemy.posY--self.CameraY)*SCALE))
 
 		self.enemy2.chaze(posX,posY)
-		self.screen.blit(self.enemy2.image,(self.enemy2.posX*SCALE,self.enemy2.posY*SCALE))
+		self.screen.blit(self.enemy2.image,((self.enemy2.posX-self.CameraX)*SCALE,(self.enemy2.posY-self.CameraY)*SCALE))
 		
 		if self.player.health<=30:
 			pygame.draw.rect(self.screen,RED,[950, 10, 2*self.player.health, 20])
@@ -110,6 +127,14 @@ class Game:
 		self.screen.blit(textsurface,(900,0))
 		pygame.display.update()
 
+
+	def sistemaBasadoEnReglas(self):
+		if(matriz[posX][posY] == 'T'):
+			g.player.health-=10
+		if(matriz[posX][posY] == 'L' and g.player.health < 100):
+			g.player.health+=10
+		if(matriz[posX][posY] == 'K'):
+			pass
 	def run(self):
 		self.playing = True
 		while self.playing:
@@ -148,13 +173,26 @@ class player:
 
 	def isBlocked(self,cod):
 		if cod==0:
-			if matriz[posX][posY+1]!='#': return False
+			if matriz[posX][posY+1]!='#': 
+				if g.CameraX<=47:
+					g.CameraX+=1
+				return False
 		elif cod==1:
-			if matriz[posX+1][posY]!='#': return False	
+			if matriz[posX+1][posY]!='#': 
+				if g.CameraY<2:
+					g.CameraY+=1
+				return False
+
 		elif cod==2:
-			if matriz[posX][posY-1]!='#':return False	
+			if matriz[posX][posY-1]!='#':
+				if g.CameraX-1>=0:
+					g.CameraX-=1 
+				return False	
 		elif cod==3:
-			if matriz[posX-1][posY]!='#': return False	
+			if matriz[posX-1][posY]!='#': 
+				if g.CameraY<=2 and g.CameraY>=1:
+					g.CameraY-=1
+				return False	
 		return True
 
 
@@ -243,8 +281,8 @@ class Node():
 class  enemy:
 	def __init__(self):
 		self.image= pygame.image.load("sprites/enemy.png") 
-		self.posX=13
-		self.posY=1
+		self.posX=47
+		self.posY=4
 		self.rectEnemy = self.image.get_rect(topleft=(self.posX*SCALE,self.posY*SCALE))
 		self.index=0
 		self.player=Node(None,None)	
@@ -313,24 +351,24 @@ class  enemy:
 				end= (PlayerX,PlayerY)
 				start= (self.posY,self.posX)	
 				path = self.astar(matriz,start,end)	
-				print(path)
+			
 				if self.posY+1==path[0][0] :
-					print("entro11")
+					
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,90)
 					self.angle=90
 				if self.posY-1==path[0][0]:
-					print("entro12")
+					
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,-180)
 					self.angle=-90
 				if self.posX+1==path[0][1]:
-					print("entro13")
+					
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,-180)
 					self.angle=-180
 				if self.posX-1==path[0][1]:
-					print("entro14")
+					
 					self.image= pygame.transform.rotate(self.image,-self.angle)
 					self.image= pygame.transform.rotate(self.image,0)
 					self.angle=0
@@ -388,7 +426,6 @@ class enemy2:
 	    			path.append(current.position)
 	    			current=current.parent[1]
 	    		path=path[::-1]
-	    		#print(path) 
 	    		return path 		
 	    	else:
 	    		children=[]
@@ -403,14 +440,12 @@ class enemy2:
 	    			nodo=Node(temp,new_pos)
 	    			nodo.f= temp[1].f+1
 	    			frontier.put(nodo,nodo.f)
-	    		#frontier.print()
-	    		#print("---------------")
+
 
 	def chaze(self,PlayerX,PlayerY):
 		dist= self.distance(PlayerY,PlayerX,self.posX,self.posY)
 		if dist<=9:
 			if self.neighbors(PlayerY,PlayerX,self.posX,self.posY):
-				print("entro")
 				self.image= pygame.image.load("sprites/enemy2.png") 
 				self.image= pygame.transform.rotate(self.image,self.angle)
 				g.player.health-=10
@@ -442,6 +477,9 @@ class enemy2:
 					self.posY=path[0][0]	
 					self.rectEnemy.y=self.posY*SCALE
 					self.rectEnemy.x=self.posX*SCALE
+# ================================  POWER UPS ========================================
+
+
 
 # ================= MAIN  ========================================
 
@@ -450,31 +488,5 @@ g= Game()
 g.generateScene()
 while True:
 	g.run()
-
-
-# g= Game()
-# g.generateScene()
-# #a = 0
-# while True:	
-# 	#b = clock()
-# 	for event in pygame.event.get():	
-# 		if event.type == pygame.QUIT:
-# 			pygame.quit()
-# 			sys.exit()
-# 		elif event.type == pygame.KEYDOWN:
-# 			if event.key == pygame.K_RIGHT:
-# 					g.movement(0)				
-# 			if event.key == pygame.K_DOWN:
-# 					g.movement(1)
-# 			if event.key == pygame.K_LEFT:
-# 				g.movement(2)
-# 			if event.key == pygame.K_UP:
-# 				g.movement(3)
-# 	while self.playing:
-#             self.dt = self.clock.tick(FPS) / 1000
-#             self.events()
-#             self.update()
-#             self.draw()
-# 	g.drawScene()
 
 # ================= MAIN  ========================================
