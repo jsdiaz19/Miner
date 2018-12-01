@@ -13,12 +13,11 @@ import math
 # ========================= ADITIONAL VARIABLES ==================
 matriz=[]
 StateGame=[]
-posY, posX=5,5 ## main player
-Ynpc, Xnpc=1,25 # Npc with pathfinding
+posY, posX=5,5 
+Ynpc, Xnpc=1,25 
 Xpos,Ypos=50,1 #
 X_State,Y_State=5,5
-state='patrol'
-direction='right'
+
 
 # ================================================================
 
@@ -56,11 +55,11 @@ class Game:
 
 	def drawWall(self,x,y):
 		self.screen.blit(wall,(x*SCALE,y*SCALE))
-		#self.screen.blit(wall,(x*SCALE,y*SCALE))
+
 
 	def drawFloor(self,x,y):
 		self.screen.blit(floor,(x*SCALE,y*SCALE))
-		#self.screen.blit(floor,(x*SCALE,y*SCALE))
+
 
 	def drawKey(self,x,y):
 		self.screen.blit(key,(x*SCALE,y*SCALE))
@@ -88,6 +87,8 @@ class Game:
 
 
 	def generateScene(self):
+		pygame.mixer.music.load('sprites/intro.mp3')
+		pygame.mixer.music.play(-1)
 		archivo,y= open('laberinto.txt','r'),0
 		for linea in archivo.readlines():
 			aux= list()
@@ -110,7 +111,7 @@ class Game:
 		self.screen.blit(self.player.player,((posY-self.CameraX)*SCALE,(posX-self.CameraY)*SCALE))
 
 		self.enemy.chaze(posX,posY)
-		self.screen.blit(self.enemy.image,((self.enemy.posX-self.CameraX)*SCALE,(self.enemy.posY--self.CameraY)*SCALE))
+		self.screen.blit(self.enemy.image,((self.enemy.posX-self.CameraX)*SCALE,(self.enemy.posY-self.CameraY)*SCALE))
 
 		self.enemy2.chaze(posX,posY)
 		self.screen.blit(self.enemy2.image,((self.enemy2.posX-self.CameraX)*SCALE,(self.enemy2.posY-self.CameraY)*SCALE))
@@ -161,14 +162,14 @@ class player:
 				pygame.quit()
 				sys.exit()
 			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_RIGHT:     ##Derecha
+				if event.key == pygame.K_RIGHT:     
 						self.movement(0,enemy)
 								
-				if event.key == pygame.K_DOWN:      ## Abajo
+				if event.key == pygame.K_DOWN:     
 						self.movement(1,enemy)
-				if event.key == pygame.K_LEFT:		##Izquierda
+				if event.key == pygame.K_LEFT:		
 					self.movement(2,enemy)	
-				if event.key == pygame.K_UP:		##Arriba
+				if event.key == pygame.K_UP:		
 					self.movement(3,enemy)
 
 	def isBlocked(self,cod):
@@ -199,7 +200,7 @@ class player:
 	def movement(self,mov,enemy):
 		global posX, posY, X_State, Y_State
 		if mov==0:
-			if self.isBlocked(mov)==False:    ##Move to right
+			if self.isBlocked(mov)==False:   
 				
 				self.player= pygame.transform.rotate(self.player,-self.angle)
 				self.player= pygame.transform.rotate(self.player,0)
@@ -219,7 +220,7 @@ class player:
 					posX+=1
 				
 		elif mov==2:
-			if self.isBlocked(mov)==False:   	##Move to left
+			if self.isBlocked(mov)==False:   
 				
 				self.player= pygame.transform.rotate(self.player,-self.angle)
 				self.player= pygame.transform.rotate(self.player,180)
@@ -229,7 +230,7 @@ class player:
 					posY-=1
 					
 		elif mov==3:
-			if self.isBlocked(mov)==False:		##Move to up
+			if self.isBlocked(mov)==False:		
 				
 				self.player= pygame.transform.rotate(self.player,-self.angle)
 				self.player= pygame.transform.rotate(self.player,90)
@@ -477,16 +478,39 @@ class enemy2:
 					self.posY=path[0][0]	
 					self.rectEnemy.y=self.posY*SCALE
 					self.rectEnemy.x=self.posX*SCALE
-# ================================  POWER UPS ========================================
-
-
 
 # ================= MAIN  ========================================
 
+pygame.init()
+screen = pygame.display.set_mode((720, 500))
+pygame.display.set_caption("MINER GAME")
+game= True
+disp=True
+pygame.font.init()
+myfont = pygame.font.SysFont('Comic Sans MS', 30)
+textsurface = myfont.render('Presiona cualquier tecla', False, (255, 255, 255))
+pygame.mixer.music.load('sprites/intro.mp3')
+pygame.mixer.music.play(0)
+while game:
+	screen.blit(intro,(0,0))
+	disp = not disp
+	if disp:
+		screen.blit(textsurface,(240,300))
+	pygame.display.flip()
+	pygame.time.wait(500)
+	for event in pygame.event.get():	
+		if event.type == pygame.QUIT:
+			pygame.quit()
+			sys.exit()
+		elif event.type == pygame.KEYDOWN:
+			pygame.quit()
+			game=False
+	
 
+# ========================================
 g= Game()
 g.generateScene()
 while True:
 	g.run()
 
-# ================= MAIN  ========================================
+
